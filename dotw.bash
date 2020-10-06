@@ -119,14 +119,14 @@ postPopper () {
     shortName=`echo ${fileName} | tr '/' '\n' | tail -1`
     mv ${fileName} ${thisDir}/dotwPosts/done.${shortName}
     printf "`ls ${thisDir}/dotwPosts/p* | wc -l` posts left to import.\n"
-#    sleep 5
-#    printf "Hit Enter for the next one... " ; read m
+    sleep 5
+    printf "Hit Enter for the next one... " ; read m
 #    uncomment the above line if you want to press enter in between posts, usefull if you're still testing
   done
 }
 
 ## MAIN ##
-#makePostFiles
+makePostFiles
 # comment out the above line if you interrupt the making of the posts so it doesn't process tweet.js again
 
 echo "Make Post Files"
