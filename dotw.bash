@@ -1,9 +1,13 @@
-#!/bin/bash
+#!/bin/zsh
 # dotw.bash
 # Import Twitter posts into Day One.
 # by Susan Pitman
 # 11/14/14 Script created.
 # 2/15/2019 Updated for dayone2. Added photo and tagging feature.
+# Changes by Tanja Orme:
+## 2020-10-06 changed date to international format 
+## changed a few things with how the photos are found
+## made adjustments for twitters current folder structure (data/tweet_media  and data/tweet.js)
 
 # Notes:
 # 1. Change the twitter downloaded stuff directory name to "twitter."
@@ -13,8 +17,8 @@
 #set -x
 
 thisDir=`pwd`
-twitterUsername="kitykity"
-timeZone="GMT-6:00"
+twitterUsername="[username]"
+timeZone="GMT+1:00"
 
 makePostFiles () {
     if ls -ld ${thisDir}/dotwPosts 2> /dev/null ; then
@@ -24,7 +28,7 @@ makePostFiles () {
     fi
     fileNum="0"
     echo "" > "${thisDir}/dotwPosts/post.0"
-      printf "Processing tweet.js file..."    
+      printf "Processing tweet.js file..."
       # Each line in the monthly download file...
       while read thisLine ; do
       if echo ${thisLine} | grep "\"source\" :" > /dev/null ; then
@@ -36,7 +40,7 @@ makePostFiles () {
        else
         echo ${thisLine} >> ${thisDir}/dotwPosts/post.${fileNumPadded}
       fi
-  done < ${thisDir}/tweet.js
+  done < ${thisDir}/data/tweet.js
   printf "\n"
 }
 
@@ -57,11 +61,11 @@ postPopper () {
     postMinute=`echo "${postDT}" | cut -d" " -f4 | cut -d":" -f2`
     postSecond=`echo "${postDT}" | cut -d" " -f4 | cut -d":" -f3`
     #TZ=US/Chicago date -jf "%Y-%m-%d %H:%M:%S %z" "2011-11-13 08:11:02 +0000" +"%Y_%m_%d__%H_%M_%S"
-    postYear=`TZ="${timeZone}" date -jf "%Y-%m-%d %H:%M:%S %z" "${postYear}-${postMonth}-${postDay} ${postHourGmt}:${postMinute}:${postSecond} +0000" +%Y` 
-    postMonth=`TZ="${timeZone}" date -jf "%Y-%m-%d %H:%M:%S %z" "${postYear}-${postMonth}-${postDay} ${postHourGmt}:${postMinute}:${postSecond} +0000" +%m` 
-    postDay=`TZ="${timeZone}" date -jf "%Y-%m-%d %H:%M:%S %z" "${postYear}-${postMonth}-${postDay} ${postHourGmt}:${postMinute}:${postSecond} +0000" +%d` 
-    postHour=`TZ="${timeZone}" date -jf "%Y-%m-%d %H:%M:%S %z" "${postYear}-${postMonth}-${postDay} ${postHourGmt}:${postMinute}:${postSecond} +0000" +%H` 
-    postMinute=`TZ="${timeZone}" date -jf "%Y-%m-%d %H:%M:%S %z" "${postYear}-${postMonth}-${postDay} ${postHourGmt}:${postMinute}:${postSecond} +0000" +%M` 
+    postYear=`TZ="${timeZone}" date -jf "%Y-%m-%d %H:%M:%S %z" "${postYear}-${postMonth}-${postDay} ${postHourGmt}:${postMinute}:${postSecond} +0000" +%Y`
+    postMonth=`TZ="${timeZone}" date -jf "%Y-%m-%d %H:%M:%S %z" "${postYear}-${postMonth}-${postDay} ${postHourGmt}:${postMinute}:${postSecond} +0000" +%m`
+    postDay=`TZ="${timeZone}" date -jf "%Y-%m-%d %H:%M:%S %z" "${postYear}-${postMonth}-${postDay} ${postHourGmt}:${postMinute}:${postSecond} +0000" +%d`
+    postHour=`TZ="${timeZone}" date -jf "%Y-%m-%d %H:%M:%S %z" "${postYear}-${postMonth}-${postDay} ${postHourGmt}:${postMinute}:${postSecond} +0000" +%H`
+    postMinute=`TZ="${timeZone}" date -jf "%Y-%m-%d %H:%M:%S %z" "${postYear}-${postMonth}-${postDay} ${postHourGmt}:${postMinute}:${postSecond} +0000" +%M`
 
 #    if [ ${postHour} -gt "12" ] ; then
 #      postHour=`expr ${postHour} - 12`
@@ -72,30 +76,34 @@ postPopper () {
 #    if [ ${postHour} = "00" ] ; then
 #      postTitle="Twitter Post"
 #     else
-### I gave up fighting with this. 
+### I gave up fighting with this.
 ### If someone wants to figure out the time conversion, be my guest to clean up my mess...
 #      postTitle="Twitter Post \@ ${postHour}\:${postMinute} ${postAMPM}"
-      postTitle="Twitter Post \@ ${postHour}\:${postMinute}" 
+      #postTitle="Twitter Post \@ ${postHour}\:${postMinute}"
 #    fi
 
     postId=`cat ${fileName} | sed -n '/favorite_/,$p' | sed -n "/favorited\"/q;p" | grep "id\"" | tail -2 | head -1 | cut -d"\"" -f4`
     postUrl="https://twitter.com/${twitterUsername}/status/${postId}"
     postFullText=`grep "\"full_text\"" ${fileName} | cut -d"\"" -f4 | sed 's/\"\,$//'`
     postTextComplete="${postTitle}\n\n${postFullText}\n${postText}\n\n<${postUrl}>\n"
-    postDateTimeForDayOne="${postMonth}/${postDay}/${postYear} ${postHour}:${postMinute}${postAMPM}"
+    postDateTimeForDayOne="${postYear}-${postMonth}-${postDay} ${postHour}:${postMinute}"
     printf "\nFilename: ${fileName}\n"
-    postMediaUrl=`grep "media_url\"" ${fileName} | head -1 | cut -d"\"" -f4`
+    postMediaUrl=`grep "expanded_url\" : \"https://twitter.com/.*/status/.*/photo" ${fileName} | head -1 | cut -d"\"" -f4 | sed 's|.*status/||'| sed 's|/photo.*||'`
+    printf "\nMediaUrl: ${postMediaUrl}"
+
     if [ "${postMediaUrl}" != "" ] ; then
-      postMedia=`basename ${postMediaUrl}`
-      postMediaFilename=`find ${thisDir}/twitter/tweet_media -name "*${postMedia}" | egrep "jpg|png|gif"`
+      #postMedia=`basename ${postMediaUrl}`
+      postMediaFilename=`find ${thisDir}/data/tweet_media -name "${postMediaUrl}*" | egrep "jpg|png|gif"`
     fi
+    printf "\n${postMediaFilename}"
+
     postTags=`grep "\"text\"" ${fileName} | cut -d":" -f2 | cut -d"\"" -f2 | sed 's/$/ /' | tr -d '\n' | sed 's/$/\ /'`
-    printf "Post Date: ${postDateTimeForDayOne}\n"
-    if [ "${postMedia}" != "" ] ; then
+    printf "\nPost Date: ${postDateTimeForDayOne}\n"
+    if [ "${postMediaFilename}" != "" ] ; then
       if [ "${postTags}" != "" ] ; then
-        printf "${postTextComplete}" | /usr/local/bin/dayone2 -t twitter ${postTags} -p ${postMediaFilename} -d="${postDateTimeForDayOne}" new 
+        printf "${postTextComplete}" | /usr/local/bin/dayone2 new -t twitter ${postTags} -p ${postMediaFilename} -d="${postDateTimeForDayOne}"
        else
-        printf "${postTextComplete}" | /usr/local/bin/dayone2 -p ${postMediaFilename} -t twitter -d="${postDateTimeForDayOne}" new 
+        printf "${postTextComplete}" | /usr/local/bin/dayone2 new -p ${postMediaFilename} -t twitter -d="${postDateTimeForDayOne}"
       fi
      else
       if [ "${postTags}" != "" ] ; then
@@ -107,12 +115,16 @@ postPopper () {
     shortName=`echo ${fileName} | tr '/' '\n' | tail -1`
     mv ${fileName} ${thisDir}/dotwPosts/done.${shortName}
     printf "`ls ${thisDir}/dotwPosts/p* | wc -l` posts left to import.\n"
-#    sleep 5
-    printf "Hit Enter for the next one... " ; read m
+    sleep 5
+#    printf "Hit Enter for the next one... " ; read m
+#    uncomment the above line if you want to press enter in between posts, usefull if you're still testing
   done
 }
 
 ## MAIN ##
-#makePostFiles
+makePostFiles
+# comment out the above line if you interrupt the making of the posts so it doesn't process tweet.js again
+
+echo "Make Post Files"
 postPopper
 ## END OF SCRIPT ##
