@@ -1,11 +1,11 @@
-#!/bin/zsh
+#!/bin/bash
 # dotw.bash
 # Import Twitter posts into Day One.
 # by Susan Pitman
 # 11/14/14 Script created.
 # 2/15/2019 Updated for dayone2. Added photo and tagging feature.
 # Changes by Tanja Orme:
-## 2020-10-06 changed date to international format 
+## 2020-10-06 changed date to international format
 ## changed a few things with how the photos are found
 ## made adjustments for twitters current folder structure (data/tweet_media  and data/tweet.js)
 
@@ -15,9 +15,13 @@
 # 3. Set your timezone variable below.
 
 #set -x
+if [[ -z "$1" ]]; then
+echo "Username not set" ; exit 1;
+fi
 
+echo "Creating posts for user " $1
 thisDir=`pwd`
-twitterUsername="[username]"
+twitterUsername=$1
 timeZone="GMT+1:00"
 
 makePostFiles () {
@@ -115,14 +119,14 @@ postPopper () {
     shortName=`echo ${fileName} | tr '/' '\n' | tail -1`
     mv ${fileName} ${thisDir}/dotwPosts/done.${shortName}
     printf "`ls ${thisDir}/dotwPosts/p* | wc -l` posts left to import.\n"
-    sleep 5
+#    sleep 5
 #    printf "Hit Enter for the next one... " ; read m
 #    uncomment the above line if you want to press enter in between posts, usefull if you're still testing
   done
 }
 
 ## MAIN ##
-makePostFiles
+#makePostFiles
 # comment out the above line if you interrupt the making of the posts so it doesn't process tweet.js again
 
 echo "Make Post Files"
